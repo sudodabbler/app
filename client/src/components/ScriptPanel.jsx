@@ -42,9 +42,11 @@ export default function ScriptPanel({ script, onChange, selectedClip, onAssignBe
   }
 
   const captionColor = script.captionStyle?.color || '#ffffff';
-  function setColor(color) {
-    onChange({ ...script, raw, captionStyle: { ...script.captionStyle, color } });
+  const outline = script.captionStyle?.outline !== false;
+  function setStyle(patchObj) {
+    onChange({ ...script, raw, captionStyle: { ...script.captionStyle, ...patchObj } });
   }
+  const setColor = (color) => setStyle({ color });
 
   const PRESETS = ['#ffffff', '#000000', '#ff2d55', '#ffd60a', '#00e5ff', '#34c759'];
 
@@ -106,10 +108,13 @@ export default function ScriptPanel({ script, onChange, selectedClip, onAssignBe
         {/* Caption style */}
         <div className="border-t border-ink-600 pt-3 space-y-2">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-400">Caption color</span>
+            <span className="text-xs font-semibold text-slate-400">Caption style</span>
             <span
               className="font-caption text-sm px-2 py-0.5 rounded"
-              style={{ color: captionColor, textShadow: '0 0 3px #000, 1px 1px 2px #000' }}
+              style={{
+                color: captionColor,
+                textShadow: outline ? '0 0 3px #000, 1px 1px 2px #000' : 'none',
+              }}
             >
               Aa TikTok
             </span>
@@ -138,9 +143,30 @@ export default function ScriptPanel({ script, onChange, selectedClip, onAssignBe
               ))}
             </div>
           </div>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-slate-400">Outline</span>
+            <div className="flex gap-1">
+              <button
+                onClick={() => setStyle({ outline: true })}
+                className={`px-2 py-1 rounded text-xs ${
+                  outline ? 'bg-brand-600 text-white' : 'bg-ink-700 text-slate-400'
+                }`}
+              >
+                Border
+              </button>
+              <button
+                onClick={() => setStyle({ outline: false })}
+                className={`px-2 py-1 rounded text-xs ${
+                  !outline ? 'bg-brand-600 text-white' : 'bg-ink-700 text-slate-400'
+                }`}
+              >
+                None
+              </button>
+            </div>
+          </div>
           <p className="text-[11px] text-slate-500">
-            Captions render bottom-center in the TikTok-style font with a black outline, above
-            TikTok's UI safe zone.
+            Captions use the TikTok-style font. Drag them in the preview to reposition (snaps to
+            centre); they stay above TikTok's UI safe zone.
           </p>
         </div>
       </div>

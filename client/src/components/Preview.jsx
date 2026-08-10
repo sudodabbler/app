@@ -23,9 +23,9 @@ function fitStyle(clip) {
 
 /**
  * Rough in-browser preview: steps through the clip sequence, applying the
- * chosen fit, playing videos at their trim/speed, showing burned captions,
- * and playing the selected audio snippet underneath. An approximation of the
- * final render, not a frame-accurate match.
+ * chosen fit, playing videos at their trim/speed, showing burned captions
+ * (live as you type), and playing the selected audio snippet underneath.
+ * The caption can be dragged to reposition, snapping to the horizontal centre.
  */
 export default function Preview({
   clips,
@@ -33,19 +33,29 @@ export default function Preview({
   beats,
   audioSelection,
   tracks,
-  captionColor = '#ffffff',
+  captionStyle = {},
+  onCaptionStyleChange,
+  selectedClip,
   aspectRatio = '9:16',
 }) {
   const [index, setIndex] = useState(-1);
   const [playing, setPlaying] = useState(false);
+  const [dragging, setDragging] = useState(false);
+  const [snapX, setSnapX] = useState(false);
   const videoRef = useRef(null);
   const audioRef = useRef(null);
   const timerRef = useRef(null);
+  const stageRef = useRef(null);
 
   const track = audioSelection ? tracks.find((t) => t.id === audioSelection.audioId) : null;
   const total = totalDuration(clips, mediaById);
   const { w, h } = ASPECTS[aspectRatio] || ASPECTS['9:16'];
   const portrait = h >= w;
+
+  const captionColor = captionStyle.color || '#ffffff';
+  const outline = captionStyle.outline !== false;
+  const capX = typeof captionStyle.x === 'number' ? captionStyle.x : 0.5;
+  const capY = typeof captionStyle.y === 'number' ? captionStyle.y : 0.78;
 
   const stop = useCallback(() => {
     clearTimeout(timerRef.current);
@@ -68,7 +78,6 @@ export default function Preview({
     setIndex(0);
   }, [clips.length, track, audioSelection]);
 
-  // Stop if the sequence changes length mid-play.
   useEffect(() => {
     stop();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -76,8 +85,7 @@ export default function Preview({
 
   useEffect(() => () => clearTimeout(timerRef.current), []);
 
-  // Drive playback: whenever the active index changes, show the clip, start
-  // any video, and schedule the advance to the next clip.
+  // Drive playback.
   useEffect(() => {
     if (!playing || index < 0) return;
     const clip = clips[index];
@@ -96,8 +104,6 @@ export default function Preview({
         try {
           v.currentTime = clip.trimIn || 0;
         } catch {}
-        // If a music track is playing, mute the clip so it doesn't clash;
-        // otherwise try with sound, falling back to muted if autoplay is blocked.
         v.muted = !!track || audioSelection?.originalAudio === 'mute';
         v.play().catch(() => {
           v.muted = true;
@@ -118,6 +124,33 @@ export default function Preview({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [playing, index]);
 
+  // Caption dragging → update normalized x/y, snapping x to centre.
+  useEffect(() => {
+    if (!dragging) return;
+    const move = (e) => {
+      const rect = stageRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      let x = (e.clientX - rect.left) / rect.width;
+      let y = (e.clientY - rect.top) / rect.height;
+      x = Math.max(0.05, Math.min(0.95, x));
+      y = Math.max(0.05, Math.min(0.95, y));
+      const near = Math.abs(x - 0.5) < 0.04;
+      setSnapX(near);
+      if (near) x = 0.5;
+      onCaptionStyleChange?.({ x: Number(x.toFixed(3)), y: Number(y.toFixed(3)) });
+    };
+    const up = () => {
+      setDragging(false);
+      setSnapX(false);
+    };
+    window.addEventListener('mousemove', move);
+    window.addEventListener('mouseup', up);
+    return () => {
+      window.removeEventListener('mousemove', move);
+      window.removeEventListener('mouseup', up);
+    };
+  }, [dragging, onCaptionStyleChange]);
+
   const clip = index >= 0 ? clips[index] : null;
   const media = clip ? mediaById.get(clip.mediaId) : null;
   const idlePoster = clips[0] ? mediaById.get(clips[0].mediaId) : null;
@@ -127,9 +160,21 @@ export default function Preview({
   const imgMedia = media?.type === 'image' ? media : idlePoster;
   const blurMedia = clip?.fit === 'blur' ? media : null;
 
+  // Which captions to show: during playback, the active clip's; when idle, the
+  // selected clip's captions, or (so typing shows up live) all burn-in beats.
   const activeCaptions = (clip?.captionBeatIds || [])
     .map((id) => beats.find((b) => b.id === id))
     .filter((b) => b?.burn && b.text);
+  const idleCaptions = (() => {
+    if (selectedClip) {
+      const att = (selectedClip.captionBeatIds || [])
+        .map((id) => beats.find((b) => b.id === id))
+        .filter((b) => b?.burn && b.text);
+      if (att.length) return att;
+    }
+    return beats.filter((b) => b?.burn && b.text);
+  })();
+  const captions = playing ? activeCaptions : idleCaptions;
 
   const stageStyle = portrait
     ? { height: 340, aspectRatio: `${w} / ${h}` }
@@ -145,10 +190,10 @@ export default function Preview({
       </div>
 
       <div
+        ref={stageRef}
         className="relative bg-black rounded-lg overflow-hidden mb-3 mx-3 shadow-lg"
         style={stageStyle}
       >
-        {/* Blur background layer */}
         {blurMedia?.thumbnail && (
           <img
             src={fileUrl(blurMedia.thumbnail)}
@@ -157,7 +202,6 @@ export default function Preview({
           />
         )}
 
-        {/* Video layer (always mounted; shown only while playing a video clip) */}
         <video
           ref={videoRef}
           playsInline
@@ -165,7 +209,6 @@ export default function Preview({
           style={{ ...fitStyle(clip), display: showVideo ? 'block' : 'none' }}
         />
 
-        {/* Image layer */}
         {showImage && imgMedia && posterSrc(imgMedia) ? (
           <img
             src={posterSrc(imgMedia)}
@@ -184,16 +227,39 @@ export default function Preview({
         {/* Safe-zone guide (bottom 15%, most relevant for 9:16) */}
         <div className="absolute inset-x-0 bottom-0 h-[15%] border-t border-dashed border-white/20 bg-black/10 pointer-events-none" />
 
-        {/* Burned captions */}
-        {activeCaptions.length > 0 && (
-          <div className="absolute inset-x-2 bottom-[18%] text-center pointer-events-none">
-            {activeCaptions.map((b) => (
+        {/* Centre snap guide */}
+        {dragging && snapX && (
+          <div className="absolute top-0 bottom-0 left-1/2 w-px bg-brand-400/80 pointer-events-none" />
+        )}
+
+        {/* Draggable captions */}
+        {captions.length > 0 && (
+          <div
+            onMouseDown={(e) => {
+              e.preventDefault();
+              setDragging(true);
+            }}
+            title="Drag to reposition"
+            className={`absolute px-2 select-none cursor-move ${
+              dragging ? 'ring-1 ring-brand-400/60 rounded' : ''
+            }`}
+            style={{
+              left: `${capX * 100}%`,
+              top: `${capY * 100}%`,
+              transform: 'translate(-50%, -50%)',
+              width: '92%',
+              textAlign: 'center',
+            }}
+          >
+            {captions.map((b) => (
               <p
                 key={b.id}
                 className="font-caption text-[13px] font-bold leading-tight"
                 style={{
                   color: captionColor,
-                  textShadow: '0 0 3px #000, 1px 1px 2px #000, -1px -1px 2px #000',
+                  textShadow: outline
+                    ? '0 0 3px #000, 1px 1px 2px #000, -1px -1px 2px #000'
+                    : 'none',
                 }}
               >
                 {b.text}
@@ -215,10 +281,14 @@ export default function Preview({
             ❚❚ Stop
           </button>
         )}
-        {playing && (
+        {playing ? (
           <span className="text-xs text-slate-400">
             Clip {index + 1}/{clips.length}
           </span>
+        ) : (
+          captions.length > 0 && (
+            <span className="text-xs text-slate-500">Drag the caption to reposition</span>
+          )
         )}
       </div>
     </div>

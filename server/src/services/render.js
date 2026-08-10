@@ -169,7 +169,7 @@ async function writeCaptionFile(tmpDir, index, text) {
 
 // ---------- per-clip normalized intermediate ----------
 
-async function encodeSegment({ projectId, clip, media, beats, index, tmpDir, originalAudio, canDrawText, captionColor, width, height }) {
+async function encodeSegment({ projectId, clip, media, beats, index, tmpDir, originalAudio, canDrawText, captionColor, captionOutline = true, captionX = 0.5, captionY = 0.78, width, height }) {
   const file = resolveMediaFile(projectId, media);
   if (!file || !existsSync(file)) {
     throw new Error(`Media file missing for clip ${index + 1}`);
@@ -214,10 +214,14 @@ async function encodeSegment({ projectId, clip, media, beats, index, tmpDir, ori
   if (burnedBeats.length && canDrawText) {
     const text = burnedBeats.map((b) => b.text.trim()).join('\n');
     const capFile = await writeCaptionFile(tmpDir, index, text);
+    // Position by the caption box centre (X,Y are 0..1 of the frame).
+    const X = clamp(captionX, 0.05, 0.95);
+    const Y = clamp(captionY, 0.05, 0.95);
+    const border = captionOutline ? 'borderw=4:bordercolor=black' : 'borderw=0';
     vStmts.push(
       `[fit]drawtext=${fontArg()}:textfile='${filterPath(capFile)}':fontcolor=${ffColor(captionColor)}:` +
-        `fontsize=54:borderw=4:bordercolor=black:line_spacing=10:` +
-        `x=(w-text_w)/2:y=h*0.70[vout]`,
+        `fontsize=54:${border}:line_spacing=10:` +
+        `x=(w*${X}-text_w/2):y=(h*${Y}-text_h/2)[vout]`,
     );
     lastVideoLabel = '[vout]';
   } else {
@@ -463,7 +467,11 @@ async function handleRender({ projectId, options }, ctx) {
 
   const mediaById = new Map(project.media.map((m) => [m.id, m]));
   const beats = project.script?.beats || [];
-  const captionColor = project.script?.captionStyle?.color || '#ffffff';
+  const cstyle = project.script?.captionStyle || {};
+  const captionColor = cstyle.color || '#ffffff';
+  const captionOutline = cstyle.outline !== false;
+  const captionX = typeof cstyle.x === 'number' ? cstyle.x : 0.5;
+  const captionY = typeof cstyle.y === 'number' ? cstyle.y : 0.78;
   const { width: W, height: H } = outputDims(project);
   const selection = project.audio?.selection
     ? { ...project.audio.selection, projectId }
@@ -504,6 +512,9 @@ async function handleRender({ projectId, options }, ctx) {
         originalAudio,
         canDrawText,
         captionColor,
+        captionOutline,
+        captionX,
+        captionY,
         width: W,
         height: H,
       });

@@ -116,6 +116,14 @@ export default function App() {
     [patch],
   );
 
+  const updateCaptionStyle = useCallback(
+    (patchObj) =>
+      patch((p) => ({
+        script: { ...p.script, captionStyle: { ...(p.script.captionStyle || {}), ...patchObj } },
+      })),
+    [patch],
+  );
+
   // ---- media/audio/render refresh (server-owned slices) ----
   const reloadMedia = useCallback(async () => {
     if (!project) return;
@@ -279,7 +287,9 @@ export default function App() {
               beats={project.script.beats || []}
               audioSelection={project.audio?.selection}
               tracks={project.audio?.tracks || []}
-              captionColor={project.script.captionStyle?.color || '#ffffff'}
+              captionStyle={project.script.captionStyle || {}}
+              onCaptionStyleChange={updateCaptionStyle}
+              selectedClip={selectedClip}
               aspectRatio={project.output?.aspectRatio || '9:16'}
             />
             <div className="flex-1 min-h-0 overflow-y-auto">

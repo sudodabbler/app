@@ -1,5 +1,13 @@
 // Shared helpers for clip math and formatting, used across timeline/preview.
 
+// Output aspect ratios. Keep in sync with server/src/services/render.js ASPECT.
+export const ASPECTS = {
+  '9:16': { w: 1080, h: 1920, label: '9:16', hint: 'TikTok / Reels' },
+  '1:1': { w: 1080, h: 1080, label: '1:1', hint: 'Square' },
+  '4:3': { w: 1440, h: 1080, label: '4:3', hint: 'Classic' },
+  '16:9': { w: 1920, h: 1080, label: '16:9', hint: 'Landscape' },
+};
+
 const uid = () =>
   typeof crypto !== 'undefined' && crypto.randomUUID
     ? crypto.randomUUID()

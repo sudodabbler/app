@@ -46,10 +46,11 @@ router.put('/:id', async (req, res, next) => {
     const project = await getProject(req.params.id);
     if (!project) return res.status(404).json({ error: 'Project not found' });
 
-    const { name, script, timeline, audio } = req.body || {};
+    const { name, script, timeline, audio, output } = req.body || {};
     if (typeof name === 'string') project.name = name;
     if (script && typeof script === 'object') project.script = script;
     if (timeline && typeof timeline === 'object') project.timeline = timeline;
+    if (output && typeof output === 'object') project.output = { ...project.output, ...output };
     if (audio && typeof audio === 'object') {
       // Preserve the uploaded track list; only the selection is client-owned.
       project.audio = { ...project.audio, ...audio, tracks: project.audio.tracks };

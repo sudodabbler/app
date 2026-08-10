@@ -11,7 +11,18 @@ import { renderUrl } from '../lib/urls.js';
 
 export const RENDER_JOB = 'render';
 
-const { width: W, height: H, fps: FPS } = config.output;
+const FPS = config.output.fps;
+
+// Output canvas dimensions per aspect ratio. 9:16 is the TikTok default.
+export const ASPECT = {
+  '9:16': { width: 1080, height: 1920 },
+  '16:9': { width: 1920, height: 1080 },
+  '4:3': { width: 1440, height: 1080 },
+  '1:1': { width: 1080, height: 1080 },
+};
+function outputDims(project) {
+  return ASPECT[project?.output?.aspectRatio] || ASPECT['9:16'];
+}
 
 // ---------- small helpers ----------
 
@@ -115,7 +126,7 @@ function clipDuration(clip, media) {
 
 // ---------- video filter chain for one clip ----------
 
-function buildVideoFilter(clip, media) {
+function buildVideoFilter(clip, media, W, H) {
   const speed = clamp(clip.speed || 1, 0.5, 2);
   const stmts = [];
 
@@ -158,7 +169,7 @@ async function writeCaptionFile(tmpDir, index, text) {
 
 // ---------- per-clip normalized intermediate ----------
 
-async function encodeSegment({ projectId, clip, media, beats, index, tmpDir, originalAudio, canDrawText, captionColor }) {
+async function encodeSegment({ projectId, clip, media, beats, index, tmpDir, originalAudio, canDrawText, captionColor, width, height }) {
   const file = resolveMediaFile(projectId, media);
   if (!file || !existsSync(file)) {
     throw new Error(`Media file missing for clip ${index + 1}`);
@@ -193,7 +204,7 @@ async function encodeSegment({ projectId, clip, media, beats, index, tmpDir, ori
   }
 
   // Build the filter graph.
-  const vStmts = buildVideoFilter(clip, media);
+  const vStmts = buildVideoFilter(clip, media, width, height);
 
   // Burned-in captions.
   const burnedBeats = (clip.captionBeatIds || [])
@@ -453,6 +464,7 @@ async function handleRender({ projectId, options }, ctx) {
   const mediaById = new Map(project.media.map((m) => [m.id, m]));
   const beats = project.script?.beats || [];
   const captionColor = project.script?.captionStyle?.color || '#ffffff';
+  const { width: W, height: H } = outputDims(project);
   const selection = project.audio?.selection
     ? { ...project.audio.selection, projectId }
     : null;
@@ -492,6 +504,8 @@ async function handleRender({ projectId, options }, ctx) {
         originalAudio,
         canDrawText,
         captionColor,
+        width: W,
+        height: H,
       });
       segments.push(seg);
       usableClips.push(clip);

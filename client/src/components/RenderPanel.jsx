@@ -1,8 +1,15 @@
 import React, { useState } from 'react';
 import { api, pollJob, fileUrl } from '../api.js';
-import { fmtDuration, fmtBytes } from '../lib/clips.js';
+import { fmtDuration, fmtBytes, ASPECTS } from '../lib/clips.js';
 
-export default function RenderPanel({ project, health, onRendersChanged, canRender }) {
+export default function RenderPanel({
+  project,
+  health,
+  onRendersChanged,
+  canRender,
+  aspectRatio = '9:16',
+  onAspectChange,
+}) {
   const [job, setJob] = useState(null);
   const [error, setError] = useState(null);
 
@@ -29,6 +36,34 @@ export default function RenderPanel({ project, health, onRendersChanged, canRend
     <div className="panel flex flex-col min-h-0">
       <div className="panel-title">Render</div>
       <div className="px-3 pb-3 space-y-3 flex flex-col min-h-0">
+        {/* Aspect ratio */}
+        <div>
+          <div className="text-xs font-semibold text-slate-400 mb-1.5">Aspect ratio</div>
+          <div className="grid grid-cols-4 gap-1">
+            {Object.entries(ASPECTS).map(([key, a]) => (
+              <button
+                key={key}
+                onClick={() => onAspectChange?.(key)}
+                title={`${a.label} — ${a.hint} (${a.w}×${a.h})`}
+                className={`flex flex-col items-center gap-1 py-1.5 rounded-md border text-[11px] ${
+                  aspectRatio === key
+                    ? 'bg-brand-600/20 border-brand-500 text-white'
+                    : 'bg-ink-700 border-ink-600 text-slate-400 hover:border-ink-500'
+                }`}
+              >
+                <span
+                  className="border border-current rounded-sm"
+                  style={{
+                    width: a.w >= a.h ? 22 : (22 * a.w) / a.h,
+                    height: a.h >= a.w ? 22 : (22 * a.h) / a.w,
+                  }}
+                />
+                {a.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
         <button
           onClick={startRender}
           disabled={busy || !canRender || ffmpegMissing}
@@ -64,7 +99,9 @@ export default function RenderPanel({ project, health, onRendersChanged, canRend
         {error && <div className="text-xs text-rose-400">{error}</div>}
 
         <div className="text-xs text-slate-500">
-          Output: MP4 · H.264/AAC · 1080×1920 · 30fps
+          Output: MP4 · H.264/AAC ·{' '}
+          {(ASPECTS[aspectRatio] || ASPECTS['9:16']).w}×
+          {(ASPECTS[aspectRatio] || ASPECTS['9:16']).h} · 30fps
         </div>
 
         <div className="border-t border-ink-600 pt-2 flex-1 min-h-0 overflow-y-auto">

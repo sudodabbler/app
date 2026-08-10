@@ -17,7 +17,7 @@ const FITS = [
   { v: 'reposition', label: 'Reposition' },
 ];
 
-export default function ClipInspector({ clip, media, beats, onChange, onClose }) {
+export default function ClipInspector({ clip, media, beats, aspectRatio = '9:16', onChange, onClose }) {
   if (!clip) return null;
   const isVideo = media?.type === 'video';
   const set = (patch) => onChange({ ...clip, ...patch });
@@ -121,7 +121,7 @@ export default function ClipInspector({ clip, media, beats, onChange, onClose })
           </>
         )}
 
-        <Row label="Fit to 9:16">
+        <Row label={`Fit to ${aspectRatio}`}>
           <div className="flex gap-1">
             {FITS.map((f) => (
               <button

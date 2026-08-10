@@ -8,6 +8,22 @@ export const ASPECTS = {
   '16:9': { w: 1920, h: 1080, label: '16:9', hint: 'Landscape' },
 };
 
+// Caption fonts — free stand-ins for TikTok's proprietary text styles.
+// `css` matches the @font-face families in index.css; keep keys in sync with
+// server/src/services/fonts.js.
+export const CAPTION_FONTS = {
+  classic: { label: 'Classic', css: 'CaptionFont' },
+  bold: { label: 'Bold', css: 'CapAnton' },
+  headline: { label: 'Headline', css: 'CapBebas' },
+  typewriter: { label: 'Typewriter', css: 'CapCourier' },
+  serif: { label: 'Serif', css: 'CapSerif' },
+  handwriting: { label: 'Handwriting', css: 'CapPacifico' },
+  marker: { label: 'Marker', css: 'CapMarker' },
+};
+
+// Caption size as a fraction of frame height (drawtext fontsize = height*size).
+export const CAPTION_SIZE = { min: 0.02, max: 0.07, default: 0.028 };
+
 const uid = () =>
   typeof crypto !== 'undefined' && crypto.randomUUID
     ? crypto.randomUUID()

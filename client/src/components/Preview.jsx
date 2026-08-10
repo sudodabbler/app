@@ -1,6 +1,13 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { fileUrl } from '../api.js';
-import { clipDuration, fmtDuration, totalDuration, ASPECTS } from '../lib/clips.js';
+import {
+  clipDuration,
+  fmtDuration,
+  totalDuration,
+  ASPECTS,
+  CAPTION_FONTS,
+  CAPTION_SIZE,
+} from '../lib/clips.js';
 
 // Poster image for a clip: the image itself, or a video's thumbnail.
 function posterSrc(media) {
@@ -42,6 +49,7 @@ export default function Preview({
   const [playing, setPlaying] = useState(false);
   const [dragging, setDragging] = useState(false);
   const [snapX, setSnapX] = useState(false);
+  const [snapY, setSnapY] = useState(false);
   const videoRef = useRef(null);
   const audioRef = useRef(null);
   const timerRef = useRef(null);
@@ -56,6 +64,12 @@ export default function Preview({
   const outline = captionStyle.outline !== false;
   const capX = typeof captionStyle.x === 'number' ? captionStyle.x : 0.5;
   const capY = typeof captionStyle.y === 'number' ? captionStyle.y : 0.78;
+  const capFontFamily = (CAPTION_FONTS[captionStyle.font] || CAPTION_FONTS.classic).css;
+  const capSizeFrac =
+    typeof captionStyle.size === 'number' ? captionStyle.size : CAPTION_SIZE.default;
+  // Scale caption size to the on-screen stage (frame-height fraction).
+  const stageH = portrait ? 340 : Math.round((300 * h) / w);
+  const capFontPx = Math.max(9, stageH * capSizeFrac);
 
   const stop = useCallback(() => {
     clearTimeout(timerRef.current);
@@ -134,14 +148,18 @@ export default function Preview({
       let y = (e.clientY - rect.top) / rect.height;
       x = Math.max(0.05, Math.min(0.95, x));
       y = Math.max(0.05, Math.min(0.95, y));
-      const near = Math.abs(x - 0.5) < 0.04;
-      setSnapX(near);
-      if (near) x = 0.5;
+      const nearX = Math.abs(x - 0.5) < 0.04;
+      const nearY = Math.abs(y - 0.5) < 0.04;
+      setSnapX(nearX);
+      setSnapY(nearY);
+      if (nearX) x = 0.5;
+      if (nearY) y = 0.5;
       onCaptionStyleChange?.({ x: Number(x.toFixed(3)), y: Number(y.toFixed(3)) });
     };
     const up = () => {
       setDragging(false);
       setSnapX(false);
+      setSnapY(false);
     };
     window.addEventListener('mousemove', move);
     window.addEventListener('mouseup', up);
@@ -227,9 +245,12 @@ export default function Preview({
         {/* Safe-zone guide (bottom 15%, most relevant for 9:16) */}
         <div className="absolute inset-x-0 bottom-0 h-[15%] border-t border-dashed border-white/20 bg-black/10 pointer-events-none" />
 
-        {/* Centre snap guide */}
+        {/* Centre snap guides */}
         {dragging && snapX && (
           <div className="absolute top-0 bottom-0 left-1/2 w-px bg-brand-400/80 pointer-events-none" />
+        )}
+        {dragging && snapY && (
+          <div className="absolute left-0 right-0 top-1/2 h-px bg-brand-400/80 pointer-events-none" />
         )}
 
         {/* Draggable captions */}
@@ -254,8 +275,11 @@ export default function Preview({
             {captions.map((b) => (
               <p
                 key={b.id}
-                className="font-caption text-[13px] font-bold leading-tight"
+                className="leading-tight"
                 style={{
+                  fontFamily: `'${capFontFamily}', sans-serif`,
+                  fontSize: capFontPx,
+                  whiteSpace: 'pre-line',
                   color: captionColor,
                   textShadow: outline
                     ? '0 0 3px #000, 1px 1px 2px #000, -1px -1px 2px #000'

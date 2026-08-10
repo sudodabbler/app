@@ -10,6 +10,37 @@
   font-weight: 700;
   font-display: swap;
 }
+@font-face {
+  font-family: 'CapAnton';
+  src: url('/assets/fonts/Anton.ttf') format('truetype');
+  font-display: swap;
+}
+@font-face {
+  font-family: 'CapBebas';
+  src: url('/assets/fonts/BebasNeue.ttf') format('truetype');
+  font-display: swap;
+}
+@font-face {
+  font-family: 'CapCourier';
+  src: url('/assets/fonts/CourierPrime.ttf') format('truetype');
+  font-weight: 700;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'CapSerif';
+  src: url('/assets/fonts/DMSerif.ttf') format('truetype');
+  font-display: swap;
+}
+@font-face {
+  font-family: 'CapPacifico';
+  src: url('/assets/fonts/Pacifico.ttf') format('truetype');
+  font-display: swap;
+}
+@font-face {
+  font-family: 'CapMarker';
+  src: url('/assets/fonts/PermanentMarker.ttf') format('truetype');
+  font-display: swap;
+}
 
 :root {
   color-scheme: dark;

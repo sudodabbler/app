@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { CAPTION_FONTS, CAPTION_SIZE } from '../lib/clips.js';
 
 const uid = () =>
   typeof crypto !== 'undefined' && crypto.randomUUID
@@ -15,18 +16,20 @@ export default function ScriptPanel({ script, onChange, selectedClip, onAssignBe
 
   function reparse(text) {
     setRaw(text);
-    const lines = text.split('\n').map((l) => l.trim());
+    // A blank line separates beats; single line breaks stay *within* a beat so
+    // multi-line captions render as written.
+    const blocks = text.split(/\n[ \t]*\n/);
     const existing = script.beats || [];
     let idx = 0;
     const beats = [];
-    for (const line of lines) {
-      if (!line) continue;
-      // Preserve prior beat settings by position where possible.
+    for (const block of blocks) {
+      const t = block.replace(/[ \t]+$/gm, '').trim(); // keep internal newlines
+      if (!t) continue;
       const prev = existing[idx];
       beats.push({
         id: prev?.id || uid(),
         index: idx + 1,
-        text: line,
+        text: t,
         burn: prev?.burn ?? false,
       });
       idx++;
@@ -43,6 +46,9 @@ export default function ScriptPanel({ script, onChange, selectedClip, onAssignBe
 
   const captionColor = script.captionStyle?.color || '#ffffff';
   const outline = script.captionStyle?.outline !== false;
+  const fontKey = script.captionStyle?.font || 'classic';
+  const size =
+    typeof script.captionStyle?.size === 'number' ? script.captionStyle.size : CAPTION_SIZE.default;
   function setStyle(patchObj) {
     onChange({ ...script, raw, captionStyle: { ...script.captionStyle, ...patchObj } });
   }
@@ -59,7 +65,7 @@ export default function ScriptPanel({ script, onChange, selectedClip, onAssignBe
         <textarea
           value={raw}
           onChange={(e) => reparse(e.target.value)}
-          placeholder={'Hook line…\nBeat 2…\nCTA line…'}
+          placeholder={'Hook line…\n(blank line = new caption)\n\nCTA line…'}
           rows={4}
           className="field w-full resize-none"
         />
@@ -79,7 +85,7 @@ export default function ScriptPanel({ script, onChange, selectedClip, onAssignBe
               title="Drag onto the selected clip to attach"
             >
               <span className="chip mt-0.5">{b.index}</span>
-              <span className="flex-1 text-sm text-slate-200">{b.text}</span>
+              <span className="flex-1 text-sm text-slate-200 whitespace-pre-line">{b.text}</span>
               <div className="flex flex-col items-end gap-1">
                 <button
                   onClick={() => toggleBurn(b.id)}
@@ -110,8 +116,9 @@ export default function ScriptPanel({ script, onChange, selectedClip, onAssignBe
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-slate-400">Caption style</span>
             <span
-              className="font-caption text-sm px-2 py-0.5 rounded"
+              className="text-sm px-2 py-0.5 rounded"
               style={{
+                fontFamily: `'${(CAPTION_FONTS[fontKey] || CAPTION_FONTS.classic).css}', sans-serif`,
                 color: captionColor,
                 textShadow: outline ? '0 0 3px #000, 1px 1px 2px #000' : 'none',
               }}
@@ -119,6 +126,39 @@ export default function ScriptPanel({ script, onChange, selectedClip, onAssignBe
               Aa TikTok
             </span>
           </div>
+
+          {/* Font family */}
+          <label className="flex items-center gap-2 text-sm">
+            <span className="text-slate-400 w-10">Font</span>
+            <select
+              value={fontKey}
+              onChange={(e) => setStyle({ font: e.target.value })}
+              className="field flex-1"
+            >
+              {Object.entries(CAPTION_FONTS).map(([key, f]) => (
+                <option key={key} value={key}>
+                  {f.label}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          {/* Size */}
+          <label className="flex items-center gap-2 text-sm">
+            <span className="text-slate-400 w-10">Size</span>
+            <input
+              type="range"
+              min={CAPTION_SIZE.min}
+              max={CAPTION_SIZE.max}
+              step="0.002"
+              value={size}
+              onChange={(e) => setStyle({ size: Number(e.target.value) })}
+              className="flex-1"
+            />
+            <span className="text-xs text-slate-500 tabular-nums w-8 text-right">
+              {Math.round((size / CAPTION_SIZE.default) * 100)}%
+            </span>
+          </label>
           <div className="flex items-center gap-2">
             <input
               type="color"

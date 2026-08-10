@@ -7,6 +7,7 @@ import { run, runOrThrow } from '../lib/proc.js';
 import { queue } from '../lib/queue.js';
 import { getProject, updateProject } from '../lib/db.js';
 import { ffmpegAvailable, probeMedia } from './media.js';
+import { captionFontFile } from './fonts.js';
 import { renderUrl } from '../lib/urls.js';
 
 export const RENDER_JOB = 'render';
@@ -82,6 +83,18 @@ function fontArg() {
   // Fall back to fontconfig lookup by family name.
   cachedFontArg = 'font=Sans';
   return cachedFontArg;
+}
+
+// drawtext font selector for a given caption font key. An explicit
+// CLIPSTITCH_FONT override always wins; otherwise use the bundled file for the
+// chosen style, falling back to the generic resolver above.
+function fontArgFor(key) {
+  if (process.env.CLIPSTITCH_FONT && existsSync(process.env.CLIPSTITCH_FONT)) {
+    return `fontfile='${filterPath(process.env.CLIPSTITCH_FONT)}'`;
+  }
+  const file = captionFontFile(key);
+  if (existsSync(file)) return `fontfile='${filterPath(file)}'`;
+  return fontArg();
 }
 
 // Naive word-wrap so drawtext lines stay within the frame.
@@ -169,7 +182,7 @@ async function writeCaptionFile(tmpDir, index, text) {
 
 // ---------- per-clip normalized intermediate ----------
 
-async function encodeSegment({ projectId, clip, media, beats, index, tmpDir, originalAudio, canDrawText, captionColor, captionOutline = true, captionX = 0.5, captionY = 0.78, width, height }) {
+async function encodeSegment({ projectId, clip, media, beats, index, tmpDir, originalAudio, canDrawText, captionColor, captionOutline = true, captionX = 0.5, captionY = 0.78, captionFont = 'classic', captionSize = 0.028, width, height }) {
   const file = resolveMediaFile(projectId, media);
   if (!file || !existsSync(file)) {
     throw new Error(`Media file missing for clip ${index + 1}`);
@@ -217,10 +230,12 @@ async function encodeSegment({ projectId, clip, media, beats, index, tmpDir, ori
     // Position by the caption box centre (X,Y are 0..1 of the frame).
     const X = clamp(captionX, 0.05, 0.95);
     const Y = clamp(captionY, 0.05, 0.95);
-    const border = captionOutline ? 'borderw=4:bordercolor=black' : 'borderw=0';
+    const fontSize = Math.round(clamp(captionSize, 0.015, 0.09) * height);
+    const borderW = Math.max(2, Math.round(fontSize * 0.08));
+    const border = captionOutline ? `borderw=${borderW}:bordercolor=black` : 'borderw=0';
     vStmts.push(
-      `[fit]drawtext=${fontArg()}:textfile='${filterPath(capFile)}':fontcolor=${ffColor(captionColor)}:` +
-        `fontsize=54:${border}:line_spacing=10:` +
+      `[fit]drawtext=${fontArgFor(captionFont)}:textfile='${filterPath(capFile)}':fontcolor=${ffColor(captionColor)}:` +
+        `fontsize=${fontSize}:${border}:line_spacing=${Math.round(fontSize * 0.18)}:` +
         `x=(w*${X}-text_w/2):y=(h*${Y}-text_h/2)[vout]`,
     );
     lastVideoLabel = '[vout]';
@@ -472,6 +487,8 @@ async function handleRender({ projectId, options }, ctx) {
   const captionOutline = cstyle.outline !== false;
   const captionX = typeof cstyle.x === 'number' ? cstyle.x : 0.5;
   const captionY = typeof cstyle.y === 'number' ? cstyle.y : 0.78;
+  const captionFont = cstyle.font || 'classic';
+  const captionSize = typeof cstyle.size === 'number' ? cstyle.size : 0.028;
   const { width: W, height: H } = outputDims(project);
   const selection = project.audio?.selection
     ? { ...project.audio.selection, projectId }
@@ -515,6 +532,8 @@ async function handleRender({ projectId, options }, ctx) {
         captionOutline,
         captionX,
         captionY,
+        captionFont,
+        captionSize,
         width: W,
         height: H,
       });

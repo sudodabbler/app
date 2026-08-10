@@ -1,0 +1,20 @@
+# dependencies
+node_modules/
+
+# build output
+client/dist/
+
+# persisted app data (projects, media, renders)
+data/
+
+# env & logs
+.env
+.env.local
+*.log
+npm-debug.log*
+
+# OS/editor
+.DS_Store
+*.swp
+.idea/
+.vscode/

@@ -1,0 +1,62 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  @apply bg-ink-900 text-slate-200 font-sans antialiased;
+  margin: 0;
+}
+
+/* Thin custom scrollbars for the panels/timeline. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #313a4d transparent;
+}
+*::-webkit-scrollbar {
+  height: 8px;
+  width: 8px;
+}
+*::-webkit-scrollbar-thumb {
+  background: #313a4d;
+  border-radius: 999px;
+}
+
+input[type='range'] {
+  @apply accent-brand-500;
+}
+
+@layer components {
+  .btn {
+    @apply inline-flex items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium
+      bg-brand-600 hover:bg-brand-500 text-white transition-colors disabled:opacity-40
+      disabled:cursor-not-allowed;
+  }
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-1.5 rounded-md px-2.5 py-1 text-sm font-medium
+      bg-ink-700 hover:bg-ink-600 text-slate-200 border border-ink-600 transition-colors
+      disabled:opacity-40 disabled:cursor-not-allowed;
+  }
+  .panel {
+    @apply bg-ink-800 border border-ink-600 rounded-xl;
+  }
+  .panel-title {
+    @apply text-xs font-semibold uppercase tracking-wider text-slate-400 px-3 pt-3 pb-2;
+  }
+  .field {
+    @apply bg-ink-700 border border-ink-600 rounded-md px-2 py-1 text-sm text-slate-100
+      focus:outline-none focus:ring-1 focus:ring-brand-500/60;
+  }
+  .chip {
+    @apply text-[11px] px-1.5 py-0.5 rounded bg-ink-600 text-slate-300;
+  }
+}

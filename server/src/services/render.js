@@ -28,6 +28,13 @@ function concatPath(p) {
   return p.replace(/'/g, "'\\''");
 }
 
+// Convert a "#rrggbb" hex color to ffmpeg's "0xRRGGBB" form. Falls back to
+// white for anything unexpected.
+function ffColor(hex) {
+  const m = /^#?([0-9a-f]{6})$/i.exec(String(hex || '').trim());
+  return m ? `0x${m[1].toUpperCase()}` : '0xFFFFFF';
+}
+
 // Cache which optional filters this ffmpeg build actually ships. drawtext in
 // particular is absent from some static builds; a missing optional filter must
 // degrade (skip captions) rather than fail the whole render.
@@ -49,6 +56,7 @@ function fontArg() {
   if (cachedFontArg) return cachedFontArg;
   const candidates = [
     process.env.CLIPSTITCH_FONT,
+    config.captionFont, // bundled Montserrat Bold (TikTok-style)
     '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf',
     '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf',
     '/System/Library/Fonts/Supplemental/Arial.ttf',
@@ -150,7 +158,7 @@ async function writeCaptionFile(tmpDir, index, text) {
 
 // ---------- per-clip normalized intermediate ----------
 
-async function encodeSegment({ projectId, clip, media, beats, index, tmpDir, originalAudio, canDrawText }) {
+async function encodeSegment({ projectId, clip, media, beats, index, tmpDir, originalAudio, canDrawText, captionColor }) {
   const file = resolveMediaFile(projectId, media);
   if (!file || !existsSync(file)) {
     throw new Error(`Media file missing for clip ${index + 1}`);
@@ -196,7 +204,7 @@ async function encodeSegment({ projectId, clip, media, beats, index, tmpDir, ori
     const text = burnedBeats.map((b) => b.text.trim()).join('\n');
     const capFile = await writeCaptionFile(tmpDir, index, text);
     vStmts.push(
-      `[fit]drawtext=${fontArg()}:textfile='${filterPath(capFile)}':fontcolor=white:` +
+      `[fit]drawtext=${fontArg()}:textfile='${filterPath(capFile)}':fontcolor=${ffColor(captionColor)}:` +
         `fontsize=54:borderw=4:bordercolor=black:line_spacing=10:` +
         `x=(w-text_w)/2:y=h*0.70[vout]`,
     );
@@ -444,6 +452,7 @@ async function handleRender({ projectId, options }, ctx) {
 
   const mediaById = new Map(project.media.map((m) => [m.id, m]));
   const beats = project.script?.beats || [];
+  const captionColor = project.script?.captionStyle?.color || '#ffffff';
   const selection = project.audio?.selection
     ? { ...project.audio.selection, projectId }
     : null;
@@ -482,6 +491,7 @@ async function handleRender({ projectId, options }, ctx) {
         tmpDir,
         originalAudio,
         canDrawText,
+        captionColor,
       });
       segments.push(seg);
       usableClips.push(clip);

@@ -12,6 +12,7 @@ export default defineConfig({
     proxy: {
       '/api': { target, changeOrigin: true },
       '/files': { target, changeOrigin: true },
+      '/assets': { target, changeOrigin: true },
     },
   },
 });

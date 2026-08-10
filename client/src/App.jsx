@@ -277,6 +277,7 @@ export default function App() {
               beats={project.script.beats || []}
               audioSelection={project.audio?.selection}
               tracks={project.audio?.tracks || []}
+              captionColor={project.script.captionStyle?.color || '#ffffff'}
             />
             <div className="flex-1 min-h-0 overflow-y-auto">
               {selectedClip ? (

@@ -18,6 +18,12 @@ export const config = {
   ffprobeBin: process.env.FFPROBE_BIN || 'ffprobe',
   galleryDlBin: process.env.GALLERY_DL_BIN || 'gallery-dl',
 
+  // Bundled caption font (Montserrat Bold — a free stand-in for TikTok's
+  // proprietary default). Served to the client for the preview and used by
+  // ffmpeg drawtext for burned-in captions. Override with CLIPSTITCH_FONT.
+  assetsDir: path.join(rootDir, 'server', 'assets'),
+  captionFont: path.join(rootDir, 'server', 'assets', 'fonts', 'Caption.ttf'),
+
   // Ingest / render limits.
   maxPinterestItems: Number(process.env.MAX_PINTEREST_ITEMS) || 100,
   maxRendersKept: Number(process.env.MAX_RENDERS_KEPT) || 10,

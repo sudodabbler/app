@@ -31,7 +31,7 @@ export default function ScriptPanel({ script, onChange, selectedClip, onAssignBe
       });
       idx++;
     }
-    onChange({ raw: text, beats });
+    onChange({ ...script, raw: text, beats });
   }
 
   function toggleBurn(id) {
@@ -40,6 +40,13 @@ export default function ScriptPanel({ script, onChange, selectedClip, onAssignBe
     );
     onChange({ ...script, raw, beats });
   }
+
+  const captionColor = script.captionStyle?.color || '#ffffff';
+  function setColor(color) {
+    onChange({ ...script, raw, captionStyle: { ...script.captionStyle, color } });
+  }
+
+  const PRESETS = ['#ffffff', '#000000', '#ff2d55', '#ffd60a', '#00e5ff', '#34c759'];
 
   const beats = script.beats || [];
 
@@ -96,10 +103,46 @@ export default function ScriptPanel({ script, onChange, selectedClip, onAssignBe
             </div>
           ))}
         </div>
-        <p className="text-[11px] text-slate-500">
-          Burned-in captions render bottom-center, white with black outline, above TikTok's UI
-          safe zone.
-        </p>
+        {/* Caption style */}
+        <div className="border-t border-ink-600 pt-3 space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-slate-400">Caption color</span>
+            <span
+              className="font-caption text-sm px-2 py-0.5 rounded"
+              style={{ color: captionColor, textShadow: '0 0 3px #000, 1px 1px 2px #000' }}
+            >
+              Aa TikTok
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <input
+              type="color"
+              value={captionColor}
+              onChange={(e) => setColor(e.target.value)}
+              className="w-9 h-9 rounded bg-transparent cursor-pointer border border-ink-600 p-0.5"
+              title="Pick any color"
+            />
+            <div className="flex flex-wrap gap-1">
+              {PRESETS.map((c) => (
+                <button
+                  key={c}
+                  onClick={() => setColor(c)}
+                  className={`w-6 h-6 rounded-full border ${
+                    captionColor.toLowerCase() === c
+                      ? 'border-white ring-2 ring-brand-500'
+                      : 'border-ink-500'
+                  }`}
+                  style={{ backgroundColor: c }}
+                  title={c}
+                />
+              ))}
+            </div>
+          </div>
+          <p className="text-[11px] text-slate-500">
+            Captions render bottom-center in the TikTok-style font with a black outline, above
+            TikTok's UI safe zone.
+          </p>
+        </div>
       </div>
     </div>
   );

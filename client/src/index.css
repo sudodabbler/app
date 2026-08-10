@@ -2,8 +2,21 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Caption font — the same file ffmpeg burns into the render, served by the
+   backend at /assets, so the preview matches the exported video. */
+@font-face {
+  font-family: 'CaptionFont';
+  src: url('/assets/fonts/Caption.ttf') format('truetype');
+  font-weight: 700;
+  font-display: swap;
+}
+
 :root {
   color-scheme: dark;
+}
+
+.font-caption {
+  font-family: 'CaptionFont', 'Montserrat', ui-sans-serif, system-ui, sans-serif;
 }
 
 html,

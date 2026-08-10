@@ -8,7 +8,7 @@ import { clipDuration, fmtDuration, totalDuration } from '../lib/clips.js';
  * and playing the selected audio snippet underneath. This is an approximation
  * of the final render, not a frame-accurate match.
  */
-export default function Preview({ clips, mediaById, beats, audioSelection, tracks }) {
+export default function Preview({ clips, mediaById, beats, audioSelection, tracks, captionColor = '#ffffff' }) {
   const [index, setIndex] = useState(-1);
   const [playing, setPlaying] = useState(false);
   const videoRef = useRef(null);
@@ -147,8 +147,11 @@ export default function Preview({ clips, mediaById, beats, audioSelection, track
             {activeCaptions.map((b) => (
               <p
                 key={b.id}
-                className="text-white text-[13px] font-bold leading-tight"
-                style={{ textShadow: '0 0 3px #000, 1px 1px 2px #000, -1px -1px 2px #000' }}
+                className="font-caption text-[13px] font-bold leading-tight"
+                style={{
+                  color: captionColor,
+                  textShadow: '0 0 3px #000, 1px 1px 2px #000, -1px -1px 2px #000',
+                }}
               >
                 {b.text}
               </p>

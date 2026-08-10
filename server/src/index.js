@@ -5,9 +5,8 @@ import fs from 'node:fs';
 import { config, paths } from './config.js';
 import { ensureDataDirs } from './lib/db.js';
 import { ffmpegAvailable, ffprobeAvailable } from './services/media.js';
-import { isAvailable } from './lib/proc.js';
 import { registerRenderWorker } from './services/render.js';
-import { registerPinterestWorker } from './services/pinterest.js';
+import { registerPinterestWorker, galleryDlAvailable } from './services/pinterest.js';
 
 import projectsRouter from './routes/projects.js';
 import mediaRouter from './routes/media.js';
@@ -41,7 +40,7 @@ app.get('/api/health', async (_req, res) => {
   const [ffmpeg, ffprobe, galleryDl] = await Promise.all([
     ffmpegAvailable(),
     ffprobeAvailable(),
-    isAvailable(config.galleryDlBin, '--version'),
+    galleryDlAvailable(),
   ]);
   res.json({
     ok: true,

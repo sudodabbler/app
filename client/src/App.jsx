@@ -19,6 +19,7 @@ function editableSignature(p) {
     script: p.script,
     timeline: p.timeline,
     selection: p.audio?.selection,
+    output: p.output,
   });
 }
 
@@ -83,6 +84,7 @@ export default function App() {
           script: project.script,
           timeline: project.timeline,
           audio: { selection: project.audio?.selection ?? null },
+          output: project.output ?? { aspectRatio: '9:16' },
         });
         lastSavedSig.current = sig;
         // keep the switcher's names/counts fresh
@@ -111,6 +113,14 @@ export default function App() {
 
   const setSelection = useCallback(
     (sel) => patch((p) => ({ audio: { ...p.audio, selection: sel } })),
+    [patch],
+  );
+
+  const updateCaptionStyle = useCallback(
+    (patchObj) =>
+      patch((p) => ({
+        script: { ...p.script, captionStyle: { ...(p.script.captionStyle || {}), ...patchObj } },
+      })),
     [patch],
   );
 
@@ -277,6 +287,10 @@ export default function App() {
               beats={project.script.beats || []}
               audioSelection={project.audio?.selection}
               tracks={project.audio?.tracks || []}
+              captionStyle={project.script.captionStyle || {}}
+              onCaptionStyleChange={updateCaptionStyle}
+              selectedClip={selectedClip}
+              aspectRatio={project.output?.aspectRatio || '9:16'}
             />
             <div className="flex-1 min-h-0 overflow-y-auto">
               {selectedClip ? (
@@ -284,6 +298,7 @@ export default function App() {
                   clip={selectedClip}
                   media={mediaById.get(selectedClip.mediaId)}
                   beats={project.script.beats || []}
+                  aspectRatio={project.output?.aspectRatio || '9:16'}
                   onChange={updateClip}
                   onClose={() => setSelectedClipId(null)}
                 />
@@ -339,6 +354,10 @@ export default function App() {
             health={health}
             onRendersChanged={reloadRenders}
             canRender={project.timeline.clips.length > 0}
+            aspectRatio={project.output?.aspectRatio || '9:16'}
+            onAspectChange={(aspectRatio) =>
+              patch((p) => ({ output: { ...p.output, aspectRatio } }))
+            }
           />
         </div>
       </div>

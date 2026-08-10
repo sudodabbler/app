@@ -39,6 +39,9 @@ function emptyProject(id, name) {
       clips: [], // Clip[]
       targetDuration: 30, // seconds, UI indicator only
     },
+    output: {
+      aspectRatio: '9:16', // '9:16' | '16:9' | '4:3' | '1:1'
+    },
     audio: {
       tracks: [], // AudioTrack[] (uploaded sources)
       selection: null, // { audioId, in, out, volume, fadeIn, fadeOut, loop, originalAudio, beatMarkers }

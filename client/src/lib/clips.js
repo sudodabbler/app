@@ -1,5 +1,29 @@
 // Shared helpers for clip math and formatting, used across timeline/preview.
 
+// Output aspect ratios. Keep in sync with server/src/services/render.js ASPECT.
+export const ASPECTS = {
+  '9:16': { w: 1080, h: 1920, label: '9:16', hint: 'TikTok / Reels' },
+  '1:1': { w: 1080, h: 1080, label: '1:1', hint: 'Square' },
+  '4:3': { w: 1440, h: 1080, label: '4:3', hint: 'Classic' },
+  '16:9': { w: 1920, h: 1080, label: '16:9', hint: 'Landscape' },
+};
+
+// Caption fonts — free stand-ins for TikTok's proprietary text styles.
+// `css` matches the @font-face families in index.css; keep keys in sync with
+// server/src/services/fonts.js.
+export const CAPTION_FONTS = {
+  classic: { label: 'Classic', css: 'CaptionFont' },
+  bold: { label: 'Bold', css: 'CapAnton' },
+  headline: { label: 'Headline', css: 'CapBebas' },
+  typewriter: { label: 'Typewriter', css: 'CapCourier' },
+  serif: { label: 'Serif', css: 'CapSerif' },
+  handwriting: { label: 'Handwriting', css: 'CapPacifico' },
+  marker: { label: 'Marker', css: 'CapMarker' },
+};
+
+// Caption size as a fraction of frame height (drawtext fontsize = height*size).
+export const CAPTION_SIZE = { min: 0.02, max: 0.07, default: 0.028 };
+
 const uid = () =>
   typeof crypto !== 'undefined' && crypto.randomUUID
     ? crypto.randomUUID()

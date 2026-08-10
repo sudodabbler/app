@@ -2,7 +2,7 @@ import path from 'node:path';
 import fs from 'node:fs/promises';
 import { nanoid } from 'nanoid';
 import { config, paths } from '../config.js';
-import { run, isAvailable } from '../lib/proc.js';
+import { run } from '../lib/proc.js';
 import { queue } from '../lib/queue.js';
 import { updateProject, ensureProjectDirs } from '../lib/db.js';
 import { classifyByExt } from '../services/media.js';
@@ -10,8 +10,45 @@ import { buildMediaItem } from '../routes/media.js';
 
 export const PINTEREST_JOB = 'pinterest-fetch';
 
-async function galleryDlAvailable() {
-  return isAvailable(config.galleryDlBin, '--version');
+/**
+ * Resolve how to invoke gallery-dl. Prefers the standalone binary, but falls
+ * back to `python -m gallery_dl` — which is how it's reachable when installed
+ * via pip on systems where Python's Scripts dir isn't on PATH (very common on
+ * Windows, including the Microsoft Store Python). Result is cached per process;
+ * restart the server after installing gallery-dl for it to be picked up.
+ *
+ * Returns { bin, pre: string[] } or null if nothing works.
+ */
+let cachedCmd; // undefined = unresolved, null = none found, object = found
+async function resolveGalleryDl() {
+  if (cachedCmd !== undefined) return cachedCmd;
+
+  const candidates = [];
+  if (process.env.GALLERY_DL_BIN) candidates.push({ bin: process.env.GALLERY_DL_BIN, pre: [], needZero: false });
+  candidates.push({ bin: config.galleryDlBin, pre: [], needZero: false }); // 'gallery-dl' on PATH
+  for (const py of ['python', 'python3', 'py']) {
+    candidates.push({ bin: py, pre: ['-m', 'gallery_dl'], needZero: true });
+  }
+
+  for (const c of candidates) {
+    try {
+      const res = await run(c.bin, [...c.pre, '--version']);
+      // A bare binary that spawns is good enough; a `python -m` fallback must
+      // exit 0 (non-zero means the module isn't installed for that interpreter).
+      if (!c.needZero || res.code === 0) {
+        cachedCmd = { bin: c.bin, pre: c.pre };
+        return cachedCmd;
+      }
+    } catch {
+      // not spawnable — try the next candidate
+    }
+  }
+  cachedCmd = null;
+  return null;
+}
+
+export async function galleryDlAvailable() {
+  return (await resolveGalleryDl()) !== null;
 }
 
 // Recursively collect media files (skip gallery-dl metadata sidecars).
@@ -75,10 +112,11 @@ async function moveInto(srcFile, destDir) {
  * Fetch media for one URL into a scratch dir. Returns
  * { status, files: string[], error }.
  */
-async function fetchUrl(url, scratchDir, remainingBudget) {
+async function fetchUrl(url, scratchDir, remainingBudget, cmd) {
   await fs.mkdir(scratchDir, { recursive: true });
   const range = `1-${Math.max(1, remainingBudget)}`;
-  const res = await run(config.galleryDlBin, [
+  const res = await run(cmd.bin, [
+    ...cmd.pre,
     '--dest', scratchDir,
     '--range', range,
     '--write-metadata',
@@ -101,7 +139,8 @@ async function fetchUrl(url, scratchDir, remainingBudget) {
  * and appends a `failed` placeholder media item for URLs that returned nothing.
  */
 async function handleFetch({ projectId, urls }, ctx) {
-  if (!(await galleryDlAvailable())) {
+  const cmd = await resolveGalleryDl();
+  if (!cmd) {
     throw new Error(
       'gallery-dl is not installed on the server. Install it (pip install gallery-dl) or use direct file upload.',
     );
@@ -129,7 +168,7 @@ async function handleFetch({ projectId, urls }, ctx) {
       const scratchDir = path.join(scratchRoot, `u${i}`);
       let outcome;
       try {
-        outcome = await fetchUrl(url, scratchDir, budget);
+        outcome = await fetchUrl(url, scratchDir, budget, cmd);
       } catch (err) {
         outcome = { status: 'failed', files: [], error: err.message };
       }

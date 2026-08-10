@@ -5,9 +5,8 @@ import fs from 'node:fs';
 import { config, paths } from './config.js';
 import { ensureDataDirs } from './lib/db.js';
 import { ffmpegAvailable, ffprobeAvailable } from './services/media.js';
-import { isAvailable } from './lib/proc.js';
 import { registerRenderWorker } from './services/render.js';
-import { registerPinterestWorker } from './services/pinterest.js';
+import { registerPinterestWorker, galleryDlAvailable } from './services/pinterest.js';
 
 import projectsRouter from './routes/projects.js';
 import mediaRouter from './routes/media.js';
@@ -32,12 +31,16 @@ app.use(express.json({ limit: '5mb' }));
 // Serve stored media / thumbnails / audio / renders straight from disk.
 app.use('/files', express.static(paths.projects(), { fallthrough: true }));
 
+// Serve bundled assets (e.g. the caption font) so the client preview can use
+// the exact same font ffmpeg burns into the render.
+app.use('/assets', express.static(config.assetsDir));
+
 // Capabilities probe so the UI can warn when render/import won't work.
 app.get('/api/health', async (_req, res) => {
   const [ffmpeg, ffprobe, galleryDl] = await Promise.all([
     ffmpegAvailable(),
     ffprobeAvailable(),
-    isAvailable(config.galleryDlBin, '--version'),
+    galleryDlAvailable(),
   ]);
   res.json({
     ok: true,

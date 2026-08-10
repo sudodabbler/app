@@ -146,7 +146,6 @@ export default function MediaLibrary({ project, health, onMediaChanged, onAddToT
           placeholder="Paste Pinterest board or pin URLs (one per line)…"
           rows={2}
           className="field w-full resize-none"
-          disabled={!health?.capabilities?.galleryDl}
         />
         <div className="flex items-center gap-2">
           <button
@@ -168,6 +167,15 @@ export default function MediaLibrary({ project, health, onMediaChanged, onAddToT
           >
             {uploading ? 'Uploading…' : 'Upload'}
           </button>
+        </div>
+
+        {health && !health.capabilities?.galleryDl && (
+          <p className="text-[11px] text-amber-400">
+            Pinterest import needs the <code className="text-amber-300">gallery-dl</code> tool
+            installed on the server. Until then, use <strong>Upload</strong> or drag &amp; drop
+            your own files below.
+          </p>
+        )}
           <input
             ref={fileRef}
             type="file"
@@ -179,8 +187,6 @@ export default function MediaLibrary({ project, health, onMediaChanged, onAddToT
               e.target.value = '';
             }}
           />
-        </div>
-
         {importStatus && (
           <div className="text-xs text-slate-400">
             <div className="h-1.5 bg-ink-600 rounded overflow-hidden mb-1">

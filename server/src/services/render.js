@@ -7,11 +7,23 @@ import { run, runOrThrow } from '../lib/proc.js';
 import { queue } from '../lib/queue.js';
 import { getProject, updateProject } from '../lib/db.js';
 import { ffmpegAvailable, probeMedia } from './media.js';
+import { captionFontFile } from './fonts.js';
 import { renderUrl } from '../lib/urls.js';
 
 export const RENDER_JOB = 'render';
 
-const { width: W, height: H, fps: FPS } = config.output;
+const FPS = config.output.fps;
+
+// Output canvas dimensions per aspect ratio. 9:16 is the TikTok default.
+export const ASPECT = {
+  '9:16': { width: 1080, height: 1920 },
+  '16:9': { width: 1920, height: 1080 },
+  '4:3': { width: 1440, height: 1080 },
+  '1:1': { width: 1080, height: 1080 },
+};
+function outputDims(project) {
+  return ASPECT[project?.output?.aspectRatio] || ASPECT['9:16'];
+}
 
 // ---------- small helpers ----------
 
@@ -26,6 +38,13 @@ function filterPath(p) {
 // Escape a path for a concat-demuxer list file (single-quoted).
 function concatPath(p) {
   return p.replace(/'/g, "'\\''");
+}
+
+// Convert a "#rrggbb" hex color to ffmpeg's "0xRRGGBB" form. Falls back to
+// white for anything unexpected.
+function ffColor(hex) {
+  const m = /^#?([0-9a-f]{6})$/i.exec(String(hex || '').trim());
+  return m ? `0x${m[1].toUpperCase()}` : '0xFFFFFF';
 }
 
 // Cache which optional filters this ffmpeg build actually ships. drawtext in
@@ -49,6 +68,7 @@ function fontArg() {
   if (cachedFontArg) return cachedFontArg;
   const candidates = [
     process.env.CLIPSTITCH_FONT,
+    config.captionFont, // bundled Montserrat Bold (TikTok-style)
     '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf',
     '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf',
     '/System/Library/Fonts/Supplemental/Arial.ttf',
@@ -63,6 +83,18 @@ function fontArg() {
   // Fall back to fontconfig lookup by family name.
   cachedFontArg = 'font=Sans';
   return cachedFontArg;
+}
+
+// drawtext font selector for a given caption font key. An explicit
+// CLIPSTITCH_FONT override always wins; otherwise use the bundled file for the
+// chosen style, falling back to the generic resolver above.
+function fontArgFor(key) {
+  if (process.env.CLIPSTITCH_FONT && existsSync(process.env.CLIPSTITCH_FONT)) {
+    return `fontfile='${filterPath(process.env.CLIPSTITCH_FONT)}'`;
+  }
+  const file = captionFontFile(key);
+  if (existsSync(file)) return `fontfile='${filterPath(file)}'`;
+  return fontArg();
 }
 
 // Naive word-wrap so drawtext lines stay within the frame.
@@ -107,7 +139,7 @@ function clipDuration(clip, media) {
 
 // ---------- video filter chain for one clip ----------
 
-function buildVideoFilter(clip, media) {
+function buildVideoFilter(clip, media, W, H) {
   const speed = clamp(clip.speed || 1, 0.5, 2);
   const stmts = [];
 
@@ -150,7 +182,7 @@ async function writeCaptionFile(tmpDir, index, text) {
 
 // ---------- per-clip normalized intermediate ----------
 
-async function encodeSegment({ projectId, clip, media, beats, index, tmpDir, originalAudio, canDrawText }) {
+async function encodeSegment({ projectId, clip, media, beats, index, tmpDir, originalAudio, canDrawText, captionColor, captionOutline = true, captionX = 0.5, captionY = 0.78, captionFont = 'classic', captionSize = 0.028, width, height }) {
   const file = resolveMediaFile(projectId, media);
   if (!file || !existsSync(file)) {
     throw new Error(`Media file missing for clip ${index + 1}`);
@@ -185,7 +217,7 @@ async function encodeSegment({ projectId, clip, media, beats, index, tmpDir, ori
   }
 
   // Build the filter graph.
-  const vStmts = buildVideoFilter(clip, media);
+  const vStmts = buildVideoFilter(clip, media, width, height);
 
   // Burned-in captions.
   const burnedBeats = (clip.captionBeatIds || [])
@@ -195,10 +227,16 @@ async function encodeSegment({ projectId, clip, media, beats, index, tmpDir, ori
   if (burnedBeats.length && canDrawText) {
     const text = burnedBeats.map((b) => b.text.trim()).join('\n');
     const capFile = await writeCaptionFile(tmpDir, index, text);
+    // Position by the caption box centre (X,Y are 0..1 of the frame).
+    const X = clamp(captionX, 0.05, 0.95);
+    const Y = clamp(captionY, 0.05, 0.95);
+    const fontSize = Math.round(clamp(captionSize, 0.015, 0.09) * height);
+    const borderW = Math.max(2, Math.round(fontSize * 0.08));
+    const border = captionOutline ? `borderw=${borderW}:bordercolor=black` : 'borderw=0';
     vStmts.push(
-      `[fit]drawtext=${fontArg()}:textfile='${filterPath(capFile)}':fontcolor=white:` +
-        `fontsize=54:borderw=4:bordercolor=black:line_spacing=10:` +
-        `x=(w-text_w)/2:y=h*0.70[vout]`,
+      `[fit]drawtext=${fontArgFor(captionFont)}:textfile='${filterPath(capFile)}':fontcolor=${ffColor(captionColor)}:` +
+        `fontsize=${fontSize}:${border}:line_spacing=${Math.round(fontSize * 0.18)}:` +
+        `x=(w*${X}-text_w/2):y=(h*${Y}-text_h/2)[vout]`,
     );
     lastVideoLabel = '[vout]';
   } else {
@@ -444,6 +482,14 @@ async function handleRender({ projectId, options }, ctx) {
 
   const mediaById = new Map(project.media.map((m) => [m.id, m]));
   const beats = project.script?.beats || [];
+  const cstyle = project.script?.captionStyle || {};
+  const captionColor = cstyle.color || '#ffffff';
+  const captionOutline = cstyle.outline !== false;
+  const captionX = typeof cstyle.x === 'number' ? cstyle.x : 0.5;
+  const captionY = typeof cstyle.y === 'number' ? cstyle.y : 0.78;
+  const captionFont = cstyle.font || 'classic';
+  const captionSize = typeof cstyle.size === 'number' ? cstyle.size : 0.028;
+  const { width: W, height: H } = outputDims(project);
   const selection = project.audio?.selection
     ? { ...project.audio.selection, projectId }
     : null;
@@ -482,6 +528,14 @@ async function handleRender({ projectId, options }, ctx) {
         tmpDir,
         originalAudio,
         canDrawText,
+        captionColor,
+        captionOutline,
+        captionX,
+        captionY,
+        captionFont,
+        captionSize,
+        width: W,
+        height: H,
       });
       segments.push(seg);
       usableClips.push(clip);

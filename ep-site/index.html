@@ -3,214 +3,50 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>for you, i would — minj</title>
-<meta name="description" content="for you, i would — the debut EP from minj. out october 23." />
+<title>FOR YOU, I WOULD — minj</title>
+<meta name="description" content="for you, i would — minj. eight blades. october 23." />
+
+<meta property="og:type" content="website" />
+<meta property="og:title" content="FOR YOU, I WOULD — minj" />
+<meta property="og:description" content="eight blades. october 23." />
+<meta property="og:image" content="assets/img/hero-flag.webp" />
+
 <link rel="stylesheet" href="style.css" />
 </head>
 <body>
 
+<div class="sky">
+  <div class="sun"></div>
+  <div class="haze haze-a"></div>
+  <div class="haze haze-b"></div>
+</div>
 <div class="grain"></div>
-<div class="cursor" id="cursor"></div>
 
-<!-- ============ HERO ============ -->
-<section class="hero" id="hero">
-  <img class="hero-bg" src="assets/img/fog-swords.webp" alt="" />
-  <div class="hero-veil"></div>
-  <div class="hero-content">
-    <p class="kicker">minj</p>
-    <h1 class="ep-title">for you, i would</h1>
-    <p class="release-line">a vow in eight parts &nbsp;·&nbsp; october 23</p>
-    <div class="scroll-hint">
-      <span></span>
-      <p>descend</p>
-    </div>
-  </div>
-</section>
+<header class="hud hud-top">
+  <p class="artist">minj</p>
+  <h1 class="ep-title">FOR YOU, I WOULD</h1>
+</header>
 
-<!-- ============ VOW / INTRO ============ -->
-<section class="vow">
-  <div class="vow-inner">
-    <p class="vow-text">
-      every knight kneels for something.<br/>
-      this one knelt for you.
-    </p>
-    <p class="vow-sub">eight vows. one surrender.</p>
-  </div>
-</section>
+<button class="sound-toggle" id="soundToggle" aria-pressed="false" title="sound">
+  <span class="sound-on">sound on</span>
+  <span class="sound-off">sound off</span>
+</button>
 
-<!-- ============ TRACKLIST ============ -->
-<section class="tracklist" id="tracklist">
-  <p class="section-label">the vows</p>
+<main class="arena" id="arena" aria-label="eight sheathed swords"></main>
 
-  <div class="track" data-track="1">
-    <div class="track-row">
-      <span class="track-num">01</span>
-      <span class="track-name">yes</span>
-      <span class="track-date">may 13</span>
-    </div>
-    <div class="track-detail">
-      <p class="lyric-frag">"and i could fight forever if you just say yes"</p>
-      <audio class="track-audio" preload="none" data-start="0">
-        <source src="assets/audio/01-yes.mp3" type="audio/mpeg" />
-      </audio>
-      <button class="play-btn" aria-label="play preview">▷ preview</button>
-    </div>
-  </div>
-
-  <div class="track" data-track="2">
-    <div class="track-row">
-      <span class="track-num">02</span>
-      <span class="track-name">icon</span>
-      <span class="track-date">sep 17</span>
-    </div>
-    <div class="track-detail">
-      <p class="lyric-frag">"the way she know that she an icon"</p>
-      <audio class="track-audio" preload="none" data-start="56">
-        <source src="assets/audio/02-icon.mp3" type="audio/mpeg" />
-      </audio>
-      <button class="play-btn" aria-label="play preview">▷ preview</button>
-    </div>
-  </div>
-
-  <div class="track" data-track="3">
-    <div class="track-row">
-      <span class="track-num">03</span>
-      <span class="track-name">get u</span>
-      <span class="track-date">dec 31, 2025</span>
-    </div>
-    <div class="track-detail">
-      <p class="lyric-frag">"let's get you up to my speed, speed, speed, speed"</p>
-      <audio class="track-audio" preload="none" data-start="0">
-        <source src="assets/audio/03-get-u.mp3" type="audio/mpeg" />
-      </audio>
-      <button class="play-btn" aria-label="play preview">▷ preview</button>
-    </div>
-  </div>
-
-  <div class="track" data-track="4">
-    <div class="track-row">
-      <span class="track-num">04</span>
-      <span class="track-name">kiss</span>
-      <span class="track-date">may 27</span>
-    </div>
-    <div class="track-detail">
-      <p class="lyric-frag">"this moment feels like it feels just like a kiss"</p>
-      <audio class="track-audio" preload="none" data-start="0">
-        <source src="assets/audio/04-kiss.mp3" type="audio/mpeg" />
-      </audio>
-      <button class="play-btn" aria-label="play preview">▷ preview</button>
-    </div>
-  </div>
-
-  <div class="track" data-track="5">
-    <div class="track-row">
-      <span class="track-num">05</span>
-      <span class="track-name">waiting</span>
-      <span class="track-date">jun 23</span>
-    </div>
-    <div class="track-detail">
-      <p class="lyric-frag">"so put your arms around me if you're waiting"</p>
-      <audio class="track-audio" preload="none" data-start="0">
-        <source src="assets/audio/05-waiting.mp3" type="audio/mpeg" />
-      </audio>
-      <button class="play-btn" aria-label="play preview">▷ preview</button>
-    </div>
-  </div>
-
-  <!-- VAIN — special chapter, church at night -->
-  <div class="track track--chapter" data-track="6" id="vain-chapter">
-    <img class="chapter-bg" src="assets/img/church-night.webp" alt="" />
-    <div class="chapter-veil"></div>
-    <div class="track-row">
-      <span class="track-num">06</span>
-      <span class="track-name">vain</span>
-      <span class="track-date">sep 14</span>
-    </div>
-    <div class="track-detail">
-      <p class="lyric-frag">"was it all in vain, my love — could you ever understand?"</p>
-      <audio class="track-audio" preload="none" data-start="209">
-        <source src="assets/audio/06-vain.mp3" type="audio/mpeg" />
-      </audio>
-      <button class="play-btn" aria-label="play preview">▷ preview</button>
-    </div>
-  </div>
-
-  <div class="track" data-track="7">
-    <div class="track-row">
-      <span class="track-num">07</span>
-      <span class="track-name">always</span>
-      <span class="track-date">dec 31, 2025</span>
-    </div>
-    <div class="track-detail">
-      <p class="lyric-frag">"it was always you"</p>
-      <audio class="track-audio" preload="none" data-start="0">
-        <source src="assets/audio/07-always.mp3" type="audio/mpeg" />
-      </audio>
-      <button class="play-btn" aria-label="play preview">▷ preview</button>
-    </div>
-  </div>
-
-  <div class="track track--title" data-track="8">
-    <div class="track-row">
-      <span class="track-num">08</span>
-      <span class="track-name">for you, i would</span>
-      <span class="track-date">sep 17</span>
-    </div>
-    <div class="track-detail">
-      <p class="lyric-frag">"your knight in shining armor — he's also human"</p>
-      <audio class="track-audio" preload="none" data-start="153">
-        <source src="assets/audio/08-for-you-i-would.mp3" type="audio/mpeg" />
-      </audio>
-      <button class="play-btn" aria-label="play preview">▷ preview</button>
-    </div>
-  </div>
-</section>
-
-<!-- ============ SURRENDER (easter egg) ============ -->
-<section class="surrender" id="surrender">
-  <p class="section-label">the surrender</p>
-  <p class="surrender-instruction">hold the flag. raise it, if you would.</p>
-
-  <div class="flag-rig" id="flagRig">
-    <video class="flag-video" id="flagVideo" muted loop playsinline poster="assets/img/hero-flag.webp">
-      <source src="assets/video/flag.mov" type="video/quicktime" />
-      <source src="assets/video/flag.mp4" type="video/mp4" />
-    </video>
-    <img class="flag-fallback" src="assets/img/hero-flag.webp" alt="a white flag against a blue sky" />
-    <div class="hold-ring" id="holdRing"><span id="holdFill"></span></div>
-  </div>
-
-  <div class="secret" id="secret">
-    <p class="secret-label">the choice was always yours</p>
-    <p class="secret-line">"spare me, the choice was always yours.<br/>i don't want anybody else but you."</p>
-    <img class="secret-photo" src="assets/img/flag-holding.jpg" alt="" />
-  </div>
-</section>
-
-<!-- ============ GALLERY ============ -->
-<section class="gallery">
-  <p class="section-label">field notes</p>
-  <div class="gallery-grid">
-    <img src="assets/img/sword-field.webp" alt="" />
-    <img src="assets/img/cloaked-tree.webp" alt="" />
-    <img src="assets/img/fog-ruins.png" alt="" />
-    <img src="assets/img/cross-hang.webp" alt="" />
-    <img src="assets/img/profile-bw.jpg" alt="minj" class="profile" />
-  </div>
-</section>
-
-<!-- ============ PRESAVE / FOOTER ============ -->
-<footer class="site-footer" id="presave">
-  <p class="footer-title">for you, i would</p>
-  <p class="footer-sub">october 23 &nbsp;·&nbsp; minj</p>
-  <a class="presave-btn" href="#" id="presaveBtn">presave — links loading</a>
-  <div class="dsp-row">
-    <a href="#" class="dsp disabled">spotify</a>
-    <a href="#" class="dsp disabled">apple music</a>
-    <a href="#" class="dsp disabled">amazon</a>
-  </div>
-  <p class="footer-fine">minj &nbsp;2026</p>
+<footer class="hud hud-bottom">
+  <p class="hint" id="hint">draw each blade</p>
+  <p class="counter"><span id="drawnCount">0</span> <span class="slash">/</span> 8 drawn</p>
 </footer>
+
+<div class="finale-card" id="finaleCard">
+  <p class="finale-kicker">one blade has not been sung</p>
+  <h2 class="finale-title">FOR YOU, I WOULD</h2>
+  <a class="finale-cta" href="/preview">hear it first</a>
+  <p class="finale-date">the record — october 23</p>
+</div>
+
+<button class="escape-hint" id="escapeHint">sheathe</button>
 
 <script src="script.js"></script>
 </body>

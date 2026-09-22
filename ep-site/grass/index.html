@@ -12,8 +12,9 @@
     font-family:"Times New Roman",serif; font-size:11px;
     color:rgba(232,222,208,.55); letter-spacing:.02em;
     text-transform:lowercase; pointer-events:none;
+    line-height:1.5;
   }
-  .credit a{color:inherit;}
+  .credit a{color:inherit; pointer-events:auto;}
   .loading{
     position:fixed; inset:0; z-index:20;
     display:flex; align-items:center; justify-content:center;
@@ -34,7 +35,10 @@
 </head>
 <body>
 <div class="loading" id="loading">growing the field…</div>
-<div class="credit">grass model — "realtime grass" by mfhscoobydoo, <a href="https://skfb.ly/6vtKS" target="_blank" rel="noopener">CC BY 4.0</a></div>
+<div class="credit">
+  grass — "realtime grass" by mfhscoobydoo, <a href="https://skfb.ly/6vtKS" target="_blank" rel="noopener">CC BY 4.0</a><br/>
+  sword — "sword" by minghauLoh, <a href="https://skfb.ly/VsDs" target="_blank" rel="noopener">CC BY 4.0</a>
+</div>
 <script type="module" src="./script.js"></script>
 </body>
 </html>
